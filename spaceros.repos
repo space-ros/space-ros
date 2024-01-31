@@ -4,15 +4,15 @@ repositories:
   ament_cobra:
     type: git
     url: https://github.com/ament/ament_cobra.git
-    version: master
+    version: cf844ceadb8bd900b4283543ff1dca08364faa0e
   ament_ikos:
     type: git
     url: https://github.com/ament/ament_ikos.git
-    version: main
+    version: b7663666ef934c51126c5fb496d1eb3099fddbc9
   ament_lint:
     type: git
     url: https://github.com/ament/ament_lint.git
-    version: spaceros
+    version: 622145e0173bbdb0e460bd2b562009a32cb25aaf
   iceoryx:
     type: git
     url: https://github.com/eclipse-iceoryx/iceoryx.git
@@ -20,4 +20,4 @@ repositories:
   process_sarif:
     type: git
     url: https://github.com/space-ros/process_sarif.git
-    version: main
+    version: humble-2024.01.0
