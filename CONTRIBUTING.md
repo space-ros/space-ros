@@ -8,8 +8,21 @@ establishing compliance with requirements of space software.
 
 ## Commits
 
+- This repository uses [pre-commit](https://pre-commit.com/). It is a dependency in
+  the [requirements.txt](./requirements.txt) for this repo.
+
+  ```python
+  # Install dependencies
+  python3 -m pip install -r requirements.txt
+  # Ensure pre-commit runs every time you commit
+  pre-commit install
+  ```
+
 - All commits must reference the issue they address. *A consequence of this is
   that no commits can be made unless there is a corresponding issue for them.*
+
+  * Example:
+    [Add markdown-link-check Action (#90)](https://github.com/space-ros/space-ros/commit/5aa1575363bddf97ac1f72fc7a6f8f7036866e18)
 
 ## Issues
 
