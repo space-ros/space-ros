@@ -1,1 +1,2 @@
+pre-commit # for repo validation
 rosinstall_generator # for update-repos.sh
