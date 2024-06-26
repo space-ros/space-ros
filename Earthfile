@@ -15,7 +15,7 @@ VERSION 0.6
 
 FROM ubuntu:jammy
 
-repos-file:
+setup:
   # Disable prompting during package installation
   ARG DEBIAN_FRONTEND=noninteractive
 
@@ -33,12 +33,28 @@ repos-file:
   RUN echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/ros-archive-keyring.gpg] http://packages.ros.org/ros2/ubuntu $(lsb_release -cs) main" | tee /etc/apt/sources.list.d/ros2.list > /dev/null
 
   # Install repos file generator script requirements.
-  RUN apt-get install -y python3-rosinstall-generator ruby
+  RUN apt-get install -y python3-rosinstall-generator
+
+repos-file:
+  FROM +setup
+
+  # Copy inputs and generate a repos file
   WORKDIR /root
   COPY --dir scripts/ ./
   COPY excluded-pkgs.txt ./
   COPY spaceros-pkgs.txt ./
   COPY spaceros.repos ./
-  RUN --no-cache sh scripts/generate-repos.sh
-  RUN --no-cache ruby scripts/merge-repos.rb
-  SAVE ARTIFACT ros2.repos AS LOCAL ros2.repos
+  RUN --no-cache sh scripts/generate-repos.sh \
+                 --outfile ros2.repos \
+                 --packages spaceros-pkgs.txt \
+                 --excluded-packages excluded-pkgs.txt
+  RUN --no-cache python3 scripts/merge-repos.py ros2.repos spaceros.repos -o output.repos
+
+  # Save the generated .repos file
+  SAVE ARTIFACT output.repos AS LOCAL ros2.repos
+
+repos-test:
+  FROM +setup
+  CMD ["bash"]
+  WORKDIR /root/user_ws
+  SAVE IMAGE space-ros-release-test:latest
