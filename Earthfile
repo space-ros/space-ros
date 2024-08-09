@@ -16,14 +16,13 @@ FROM ubuntu:jammy
 
 # Defaulting to ROS 2 humble
 ARG ROS_DISTRO="humble"
+ARG DEBIAN_FRONTEND=noninteractive
 
 setup:
   # Disable prompting during package installation
-  ARG DEBIAN_FRONTEND=noninteractive
+
   ARG ROS_DISTRO
 
-  # TODO - the `setup` step will be merged with the `setup` step in spaceros docker Earthfile
-  # This variable will then act as a single source of truth.
   ENV ROS_DISTRO ${ROS_DISTRO}
 
   # The following commands are based on the source install for ROS 2 Rolling Ridley.
