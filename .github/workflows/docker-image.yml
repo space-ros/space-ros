@@ -1,0 +1,27 @@
+name: Docker Image CI
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v3
+    - name: Run the build.sh scripts
+      run: |
+            if [ -v secrets.DOCKER_HUB_RW_TOKEN ]
+            then 
+              echo "Secrets detected, can't run build script"
+              exit 1 # terminate and indicate error
+            else 
+              # find the build.sh scripts and execute them
+              find . -iname 'build.sh' -exec ./{} \;
+            fi
