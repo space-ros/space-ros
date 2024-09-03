@@ -16,8 +16,10 @@ jobs:
     - name: Checkout
       uses: actions/checkout@v3
     - name: Run the build.sh scripts
+      env:
+        DOCKER_HUB_TOKEN: ${{ secrets.DOCKER_HUB_RW_TOKEN }}
       run: |
-            if [ -v secrets.DOCKER_HUB_RW_TOKEN ]
+            if [ -n "$DOCKER_HUB_TOKEN" ]
             then 
               echo "Secrets detected, can't run build script"
               exit 1 # terminate and indicate error
