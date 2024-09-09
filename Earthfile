@@ -210,10 +210,18 @@ rosdep:
         clang-14
 
   WORKDIR ${SPACEROS_DIR}
+
+  # WORKAROUND START
+  # ikos 3.2 does not build on ubuntu24.04. the way to fix this properly is:
+  # * merge https://github.com/NASA-SW-VnV/ikos/pull/274
+  # * make ikos 3.3 release
+  # * update here to clone ikos 3.3
   RUN git clone https://github.com/NASA-SW-VnV/ikos.git && \
       cd ikos && \
       git fetch origin pull/274/head:pr274 && \
       git checkout pr274
+  # WORKAOUND END
+
   WORKDIR ${SPACEROS_DIR}/ikos
   RUN mkdir build
   WORKDIR ${SPACEROS_DIR}/ikos/build
@@ -231,20 +239,32 @@ rosdep:
 build:
   FROM +rosdep
 
-  # there is issue building cobra_vendor on ubuntu24... lets skip for now. but we need other packages related to it...
+  # WORKAROUND START
+  # there is issue building cobra_vendor on ubuntu24... what follows is a hack to make it work, but the proper fix is:
+  # * merge https://github.com/nimble-code/Cobra/pull/68
+  # * release 4.8 version of cobra
+  # * PR to update VER and REV in ament_cobra: https://github.com/ament/ament_cobra/blob/master/cobra_vendor/CMakeLists.txt#L13
+  # * remove this workaround
+  # use cobra 4.7
+  RUN sed -i 's/VER "4.1"/VER "4.7"/g' /opt/spaceros/src/ament_cobra/cobra_vendor/CMakeLists.txt
+  RUN sed -i s/09a5e421bfa7b84d5fca651d3ae3a93e7c30389f/be00dc6bb66d2d1481f0bc91ef630744fd33c9e0/g /opt/spaceros/src/ament_cobra/cobra_vendor/CMakeLists.txt
+  # create build dirs
   RUN colcon build \
         --cmake-args \
         -DCMAKE_BUILD_TYPE=Release \
         -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
         --no-warn-unused-cli \
-        --packages-up-to cobra_vendor; exit 0 
+        --packages-up-to cobra_vendor; exit 0
+  # essentially PR 68 for cobra
+  RUN rm /opt/spaceros/build/cobra_vendor/cobra-4.7/src/cobra-4.7/bin_linux && \
+      mkdir /opt/spaceros/build/cobra_vendor/cobra-4.7/src/cobra-4.7/bin_linux 
+  # WORKAROUND END
 
   RUN colcon build \
         --cmake-args \
         -DCMAKE_BUILD_TYPE=Release \
         -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
-        --no-warn-unused-cli \
-        --packages-skip cobra_vendor 
+        --no-warn-unused-cli
 
   COPY +spaceros-artifacts/exact.repos install/exact.repos
   SAVE ARTIFACT install AS LOCAL install
@@ -252,20 +272,32 @@ build:
 build-dev:
   FROM +rosdep
 
-  # there is issue building cobra_vendor on ubuntu24... lets skip for now. but we need other packages related to it...
+  # WORKAROUND START
+  # there is issue building cobra_vendor on ubuntu24... what follows is a hack to make it work, but the proper fix is:
+  # * merge https://github.com/nimble-code/Cobra/pull/68
+  # * release 4.8 version of cobra
+  # * PR to update VER and REV in ament_cobra: https://github.com/ament/ament_cobra/blob/master/cobra_vendor/CMakeLists.txt#L13
+  # * remove this workaround
+  # use cobra 4.7
+  RUN sed -i 's/VER "4.1"/VER "4.7"/g' /opt/spaceros/src/ament_cobra/cobra_vendor/CMakeLists.txt
+  RUN sed -i s/09a5e421bfa7b84d5fca651d3ae3a93e7c30389f/be00dc6bb66d2d1481f0bc91ef630744fd33c9e0/g /opt/spaceros/src/ament_cobra/cobra_vendor/CMakeLists.txt
+  # create build dirs
   RUN colcon build \
-      --cmake-args \
-      -DCMAKE_BUILD_TYPE=RelWithDebInfo \
-      -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
-      --no-warn-unused-cli \
-      --packages-up-to cobra_vendor; exit 0 
+        --cmake-args \
+        -DCMAKE_BUILD_TYPE=Release \
+        -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
+        --no-warn-unused-cli \
+        --packages-up-to cobra_vendor; exit 0
+  # essentially PR 68 for cobra
+  RUN rm /opt/spaceros/build/cobra_vendor/cobra-4.7/src/cobra-4.7/bin_linux && \
+      mkdir /opt/spaceros/build/cobra_vendor/cobra-4.7/src/cobra-4.7/bin_linux 
+  # WORKAROUND END
 
   RUN colcon build \
       --cmake-args \
       -DCMAKE_BUILD_TYPE=RelWithDebInfo \
       -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
-      --no-warn-unused-cli \
-      --packages-skip cobra_vendor 
+      --no-warn-unused-cli 
 
   # TODO: Consider pushing pre-built dev images to the registry.
   # SAVE IMAGE --push osrf/space-ros-dev:latest osrf/space-ros-dev:$tag
