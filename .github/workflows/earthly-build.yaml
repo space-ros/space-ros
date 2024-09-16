@@ -30,6 +30,9 @@ jobs:
           path: log/build_results_archives/${{env.archivename}}
           if-no-files-found: error
   space-ros-image:
+    outputs:
+      output_ubuntu: ${{steps.push_image.outputs.output_ubuntu-latest}}
+      output_macos: ${{steps.push_image.outputs.output_macos-14}}
     strategy:
       matrix:
         include:
@@ -47,6 +50,10 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Install prerequisites
+        if: ${{ startsWith(matrix.os, 'macos') }}
+        run: |
+          brew install --cask docker
       - name: Set up earthly
         run: |
           sudo wget https://github.com/earthly/earthly/releases/latest/download/${{matrix.earthly}} -O /usr/local/bin/earthly
@@ -56,13 +63,28 @@ jobs:
           earthly --ci --output +sources
           earthly --ci +image
       - name: Push tagged spaceros images to Dockerhub
+        id: push_image
         env:
           DOCKER_HUB_TOKEN: ${{ secrets.DOCKER_HUB_RW_TOKEN }}
+          TAG: osrf/space-ros:${{ github.ref_name }}-${{ runner.arch }}
         if: ${{ github.ref_type == 'tag' }}
         run: |
           echo $DOCKER_HUB_TOKEN | docker login --username osrfbot --password-stdin
-          earthly --ci --push +push-image --TAG="osrf/space-ros:${{ github.ref_name }}" --LATEST="osrf/space-ros:latest"
+          earthly --ci --push +push-image --TAG="$TAG" --LATEST=""
+          echo "output_${{ matrix.os }}=${TAG}" >> "$GITHUB_OUTPUT"
       - name: Push the main spaceros image to GHCR
-        if: ${{ github.ref_name == 'main' }}
+        if: ${{ github.ref_name == 'main' && startsWith(matrix.os, 'ubuntu') }}
         run: |
           earthly --ci --push +push-image --TAG="ghcr.io/space-ros/space-ros:main" --LATEST=""
+  combine-manifests:
+    runs-on: ubuntu-latest
+    needs: space-ros-image
+    steps:
+      - name: Combine Manifests
+        env:
+          DOCKER_HUB_TOKEN: ${{ secrets.DOCKER_HUB_RW_TOKEN }}
+      - run: |
+          echo $DOCKER_HUB_TOKEN | docker login --username osrfbot --password-stdin
+          docker manifest create osrf/space-ros \
+            --amend ${{ join(needs.space-ros-image.outputs, ' --amend ') }}
+          docker manifest push osrf/space-ros:${{ github.ref_name }}
