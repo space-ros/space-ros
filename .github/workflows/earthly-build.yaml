@@ -83,7 +83,7 @@ jobs:
       - name: Combine Manifests
         env:
           DOCKER_HUB_TOKEN: ${{ secrets.DOCKER_HUB_RW_TOKEN }}
-      - run: |
+        run: |
           echo $DOCKER_HUB_TOKEN | docker login --username osrfbot --password-stdin
           docker manifest create osrf/space-ros \
             --amend ${{ join(needs.space-ros-image.outputs, ' --amend ') }}
