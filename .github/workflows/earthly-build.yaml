@@ -44,16 +44,16 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v3
+      - name: Install prerequisites
+        if: ${{ startsWith(matrix.os, 'macos') }}
+        run: |
+          brew install --cask docker
       - name: Login to ghcr
         uses: docker/login-action@v3
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-      - name: Install prerequisites
-        if: ${{ startsWith(matrix.os, 'macos') }}
-        run: |
-          brew install --cask docker
       - name: Set up earthly
         run: |
           sudo wget https://github.com/earthly/earthly/releases/latest/download/${{matrix.earthly}} -O /usr/local/bin/earthly
