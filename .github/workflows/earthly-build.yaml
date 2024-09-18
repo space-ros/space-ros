@@ -44,11 +44,14 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v3
-      - name: Install prerequisites
+      - name: Set up docker
         if: ${{ startsWith(matrix.os, 'macos') }}
         run: |
           brew install --cask docker
           open /Applications/Docker.app
+      - name: Wait for docker
+        timeout-minutes: 1
+        run: bash docker/scripts/wait-for-docker.sh
       - name: Login to ghcr
         uses: docker/login-action@v3
         with:
