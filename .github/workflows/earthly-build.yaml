@@ -44,14 +44,12 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v3
-      - name: Set up docker
+      - name: Set up docker on Mac
         if: ${{ startsWith(matrix.os, 'macos') }}
         run: |
-          brew install --cask docker
-          open /Applications/Docker.app
-      - name: Wait for docker
-        timeout-minutes: 1
-        run: bash docker/scripts/wait-for-docker.sh
+          brew install docker
+          brew install colima
+          colima start
       - name: Login to ghcr
         uses: docker/login-action@v3
         with:
