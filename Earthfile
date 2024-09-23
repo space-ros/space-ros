@@ -213,13 +213,12 @@ rosdep:
 
   # WORKAROUND START
   # ikos 3.2 does not build on ubuntu24.04. the way to fix this properly is:
-  # * merge https://github.com/NASA-SW-VnV/ikos/pull/274
+  # * merged https://github.com/NASA-SW-VnV/ikos/pull/274
   # * make ikos 3.3 release
   # * update here to clone ikos 3.3
   RUN git clone https://github.com/NASA-SW-VnV/ikos.git && \
       cd ikos && \
-      git fetch origin pull/274/head:pr274 && \
-      git checkout pr274
+      git checkout master
   # WORKAOUND END
 
   WORKDIR ${SPACEROS_DIR}/ikos
@@ -271,6 +270,7 @@ build:
 
 build-dev:
   FROM +rosdep
+  ARG tag='jazzy'
 
   # WORKAROUND START
   # there is issue building cobra_vendor on ubuntu24... what follows is a hack to make it work, but the proper fix is:
