@@ -31,25 +31,21 @@ jobs:
           if-no-files-found: error
   space-ros-image:
     outputs:
-      output_ubuntu: ${{steps.push_image.outputs.output_ubuntu-latest}}
-      output_macos: ${{steps.push_image.outputs.output_macos-14}}
+      output_amd: ${{ steps.push_image.outputs.output_linux-amd64 }}
+      output_arm: ${{ steps.push_image.outputs.output_linux-arm64 }}
     strategy:
-      matrix:
-        include:
-          - os: ubuntu-latest
-            earthly: earthly-linux-amd64
-          - os: macos-14
-            earthly: earthly-darwin-arm64
-    runs-on: ${{ matrix.os }}
+      matrix: 
+        platform: [linux/amd64, linux/arm64]
+    runs-on: ubuntu-latest
     steps:
+      - name: Set up QEMU
+        id: qemu
+        uses: docker/setup-qemu-action@v1
+        with:
+          image: tonistiigi/binfmt:latest
+          platforms: all
       - name: Checkout
         uses: actions/checkout@v3
-      - name: Set up docker on Mac
-        if: ${{ startsWith(matrix.os, 'macos') }}
-        run: |
-          brew install docker
-          brew install colima
-          colima start --cpu 3 --memory 7
       - name: Login to ghcr
         uses: docker/login-action@v3
         with:
@@ -58,24 +54,25 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
       - name: Set up earthly
         run: |
-          sudo wget https://github.com/earthly/earthly/releases/latest/download/${{matrix.earthly}} -O /usr/local/bin/earthly
+          sudo wget https://github.com/earthly/earthly/releases/latest/download/earthly-linux-amd64 -O /usr/local/bin/earthly
           sudo chmod 755 /usr/local/bin/earthly
       - name: Build spaceros image
         run: |
-          earthly --ci --output +sources
-          earthly --ci +image
+          earthly --ci --platform=${{ matrix.platform }} --output +sources
+          earthly --ci --platform=${{ matrix.platform }} +image
       - name: Push tagged spaceros images to Dockerhub
         id: push_image
         env:
           DOCKER_HUB_TOKEN: ${{ secrets.DOCKER_HUB_RW_TOKEN }}
-          TAG: osrf/space-ros:${{ github.ref_name }}-${{ runner.arch }}
         if: ${{ github.ref_type == 'tag' }}
         run: |
           echo $DOCKER_HUB_TOKEN | docker login --username osrfbot --password-stdin
-          earthly --ci --push +push-image --TAG="$TAG" --LATEST=""
-          echo "output_${{ matrix.os }}=${TAG}" >> "$GITHUB_OUTPUT"
+          PF=$(sed 's/\//-/g' <(echo ${{ matrix.platform }}))
+          TAG=osrf/space-ros:${{ github.ref_name }}-${PF}
+          earthly --ci --platform=${{ matrix.platform }} --push +push-image --TAG="${TAG}" --LATEST=""
+          echo "output_${PF}=${TAG}" >> "$GITHUB_OUTPUT"
       - name: Push the main spaceros image to GHCR
-        if: ${{ github.ref_name == 'main' && startsWith(matrix.os, 'ubuntu') }}
+        if: ${{ github.ref_name == 'main' && contains(matrix.platform, 'amd') }}
         run: |
           earthly --ci --push +push-image --TAG="ghcr.io/space-ros/space-ros:main" --LATEST=""
   combine-manifests:
@@ -87,6 +84,6 @@ jobs:
           DOCKER_HUB_TOKEN: ${{ secrets.DOCKER_HUB_RW_TOKEN }}
         run: |
           echo $DOCKER_HUB_TOKEN | docker login --username osrfbot --password-stdin
-          docker manifest create osrf/space-ros \
+          docker manifest create osrf/space-ros:${{ github.ref_name }} \
             --amend ${{ join(needs.space-ros-image.outputs, ' --amend ') }}
           docker manifest push osrf/space-ros:${{ github.ref_name }}
