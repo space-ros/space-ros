@@ -210,17 +210,7 @@ rosdep:
         clang-14
 
   WORKDIR ${SPACEROS_DIR}
-
-  # WORKAROUND START
-  # ikos 3.2 does not build on ubuntu24.04. the way to fix this properly is:
-  # * merged https://github.com/NASA-SW-VnV/ikos/pull/274
-  # * make ikos 3.3 release
-  # * update here to clone ikos 3.3
-  RUN git clone https://github.com/NASA-SW-VnV/ikos.git && \
-      cd ikos && \
-      git checkout master
-  # WORKAOUND END
-
+  RUN git clone --branch v3.4 --depth 1 https://github.com/NASA-SW-VnV/ikos.git
   WORKDIR ${SPACEROS_DIR}/ikos
   RUN mkdir build
   WORKDIR ${SPACEROS_DIR}/ikos/build
