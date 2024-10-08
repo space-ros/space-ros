@@ -11,20 +11,22 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-VERSION 0.6
-FROM ubuntu:jammy
+VERSION 0.8
+FROM ubuntu:noble
 
 # Defaulting to ROS 2 humble
-ARG ROS_DISTRO="humble"
+ARG ROS_DISTRO="jazzy"
+
+ENV ROS_DISTRO ${ROS_DISTRO}
 
 setup:
   # Disable prompting during package installation
   ARG DEBIAN_FRONTEND=noninteractive
-  ARG ROS_DISTRO
+  #ARG ROS_DISTRO
 
   # TODO - the `setup` step will be merged with the `setup` step in spaceros docker Earthfile
   # This variable will then act as a single source of truth.
-  ENV ROS_DISTRO ${ROS_DISTRO}
+  #ENV ROS_DISTRO ${ROS_DISTRO}
 
   # The following commands are based on the source install for ROS 2 Rolling Ridley.
   # See: https://docs.ros.org/en/ros2_documentation/rolling/Installation/Ubuntu-Development-Setup.html
@@ -117,13 +119,13 @@ repos-file:
   COPY spaceros-pkgs.txt ./
   COPY spaceros.repos ./
   # This is a fresh image, so we do not need to exclude installed packages.
-  RUN --no-cache sh scripts/generate-repos.sh \
+  RUN sh scripts/generate-repos.sh \
                  --outfile ros2.repos \
                  --packages spaceros-pkgs.txt \
                  --excluded-packages excluded-pkgs.txt \
                  --exclude-installed false \
                  --rosdistro ${ROS_DISTRO}
-  RUN --no-cache python3 scripts/merge-repos.py ros2.repos spaceros.repos -o output.repos
+  RUN python3 scripts/merge-repos.py ros2.repos spaceros.repos -o output.repos
   SAVE ARTIFACT output.repos AS LOCAL ros2.repos
 
 spaceros-artifacts:
@@ -136,7 +138,7 @@ spaceros-artifacts:
   COPY excluded-pkgs.txt ./
 
   # this ensure the vcs import and export results are not cached
-  RUN --no-cache echo "Cloning spaceros repo artifacts"
+  RUN echo "Cloning spaceros repo artifacts"
 
   # we run vcstool inside this task, because some packages in `ros2.repos` are not pinned and otherwise
   # earthly won't pull latest changes
@@ -171,13 +173,16 @@ rosdep:
       --mount=type=cache,mode=0777,target=/var/lib/apt,sharing=locked,id=lib_apt_cache \
       sudo apt-get update && \
       rosdep update && \
-      rosdep install -y \
+      rosdep install -s -y \
         --from-paths src --ignore-src \
         --rosdistro ${ROS_DISTRO} \
         # `urdfdom_headers` is cloned from source, however rosdep can't find it.
         # It is because package.xml manifest is missing. See: https://github.com/ros/urdfdom_headers
         # Additionally, IKOS must be excluded as per: https://github.com/space-ros/docker/issues/99
-        --skip-keys "$(tr '\n' ' ' < 'excluded-pkgs.txt') urdfdom_headers ikos"
+        --skip-keys "$(tr '\n' ' ' < 'excluded-pkgs.txt') urdfdom_headers ikos" > rosdep-commands.sh && \
+      chmod u+x rosdep-commands.sh && \
+      ./rosdep-commands.sh
+        
   RUN rm excluded-pkgs.txt
 
   RUN --mount=type=cache,mode=0777,target=/var/cache/apt,sharing=locked,id=cache_apt_cache \
@@ -205,7 +210,7 @@ rosdep:
         clang-14
 
   WORKDIR ${SPACEROS_DIR}
-  RUN git clone -b v3.2 --depth 1 https://github.com/NASA-SW-VnV/ikos.git
+  RUN git clone --branch v3.4 --depth 1 https://github.com/NASA-SW-VnV/ikos.git
   WORKDIR ${SPACEROS_DIR}/ikos
   RUN mkdir build
   WORKDIR ${SPACEROS_DIR}/ikos/build
@@ -214,7 +219,7 @@ rosdep:
         -DCMAKE_BUILD_TYPE="Debug" \
         -DLLVM_CONFIG_EXECUTABLE="/usr/lib/llvm-14/bin/llvm-config" \
         ..
-  RUN make
+  RUN make -j`nproc`
   RUN sudo make install
   ENV PATH="/opt/ikos/bin/:$PATH"
   WORKDIR ${SPACEROS_DIR}
@@ -222,21 +227,67 @@ rosdep:
 
 build:
   FROM +rosdep
+
+  # WORKAROUND START
+  # there is issue building cobra_vendor on ubuntu24... what follows is a hack to make it work, but the proper fix is:
+  # * merge https://github.com/nimble-code/Cobra/pull/68
+  # * release 4.8 version of cobra
+  # * PR to update VER and REV in ament_cobra: https://github.com/ament/ament_cobra/blob/master/cobra_vendor/CMakeLists.txt#L13
+  # * remove this workaround
+  # use cobra 4.7
+  RUN sed -i 's/VER "4.1"/VER "4.7"/g' /opt/spaceros/src/ament_cobra/cobra_vendor/CMakeLists.txt
+  RUN sed -i s/09a5e421bfa7b84d5fca651d3ae3a93e7c30389f/be00dc6bb66d2d1481f0bc91ef630744fd33c9e0/g /opt/spaceros/src/ament_cobra/cobra_vendor/CMakeLists.txt
+  # create build dirs
+  RUN colcon build \
+        --cmake-args \
+        -DCMAKE_BUILD_TYPE=Release \
+        -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
+        --no-warn-unused-cli \
+        --packages-up-to cobra_vendor; exit 0
+  # essentially PR 68 for cobra
+  RUN rm /opt/spaceros/build/cobra_vendor/cobra-4.7/src/cobra-4.7/bin_linux && \
+      mkdir /opt/spaceros/build/cobra_vendor/cobra-4.7/src/cobra-4.7/bin_linux 
+  # WORKAROUND END
+
   RUN colcon build \
         --cmake-args \
         -DCMAKE_BUILD_TYPE=Release \
         -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
         --no-warn-unused-cli
+
   COPY +spaceros-artifacts/exact.repos install/exact.repos
   SAVE ARTIFACT install AS LOCAL install
 
 build-dev:
   FROM +rosdep
+  ARG tag='jazzy'
+
+  # WORKAROUND START
+  # there is issue building cobra_vendor on ubuntu24... what follows is a hack to make it work, but the proper fix is:
+  # * merge https://github.com/nimble-code/Cobra/pull/68
+  # * release 4.8 version of cobra
+  # * PR to update VER and REV in ament_cobra: https://github.com/ament/ament_cobra/blob/master/cobra_vendor/CMakeLists.txt#L13
+  # * remove this workaround
+  # use cobra 4.7
+  RUN sed -i 's/VER "4.1"/VER "4.7"/g' /opt/spaceros/src/ament_cobra/cobra_vendor/CMakeLists.txt
+  RUN sed -i s/09a5e421bfa7b84d5fca651d3ae3a93e7c30389f/be00dc6bb66d2d1481f0bc91ef630744fd33c9e0/g /opt/spaceros/src/ament_cobra/cobra_vendor/CMakeLists.txt
+  # create build dirs
+  RUN colcon build \
+        --cmake-args \
+        -DCMAKE_BUILD_TYPE=Release \
+        -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
+        --no-warn-unused-cli \
+        --packages-up-to cobra_vendor; exit 0
+  # essentially PR 68 for cobra
+  RUN rm /opt/spaceros/build/cobra_vendor/cobra-4.7/src/cobra-4.7/bin_linux && \
+      mkdir /opt/spaceros/build/cobra_vendor/cobra-4.7/src/cobra-4.7/bin_linux 
+  # WORKAROUND END
+
   RUN colcon build \
       --cmake-args \
       -DCMAKE_BUILD_TYPE=RelWithDebInfo \
       -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
-      --no-warn-unused-cli
+      --no-warn-unused-cli 
 
   # TODO: Consider pushing pre-built dev images to the registry.
   # SAVE IMAGE --push osrf/space-ros-dev:latest osrf/space-ros-dev:$tag
@@ -257,7 +308,7 @@ build-testing:
 image:
   FROM +rosdep
   ARG VCS_REF
-  ARG tag='latest'
+  ARG VERSION='jazzy'
 
   # Specify the docker image metadata
   LABEL org.label-schema.schema-version="1.0"
@@ -276,4 +327,14 @@ image:
   COPY docker/entrypoint.sh /ros_entrypoint.sh
   ENTRYPOINT ["/ros_entrypoint.sh"]
   CMD ["bash"]
-  SAVE IMAGE --push osrf/space-ros:latest osrf/space-ros:$tag
+  SAVE IMAGE osrf/space-ros:${VERSION}
+
+# Target for prepping image(s) to be pushed to remote registries.
+push-image:
+  FROM +image
+
+  # This can be overridden with a blank string to prevent pushing to the registry.
+  ARG LATEST="osrf/space-ros:latest"
+  ARG TAG
+  SAVE IMAGE --push ${LATEST} ${TAG}
+
