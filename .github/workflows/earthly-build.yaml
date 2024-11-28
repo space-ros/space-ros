@@ -59,7 +59,7 @@ jobs:
           latest_image_tag: ""
       # Push both tagged releases and the latest main builds to Dockerhub
       - name: Push spaceros images to Dockerhub
-        if: ${{ github.ref_type == 'tag' || github.ref_name == 'main' }}
+        if: ${{ github.ref_type == 'tag' || github.ref_name == 'main' || github.ref_name == 'jazzy' }}
         env:
           DOCKER_HUB_TOKEN: ${{ secrets.DOCKER_HUB_RW_TOKEN }}
           LATEST_IMAGE_TAG: ${{ env.latest_image_tag }}
