@@ -108,14 +108,18 @@ if [ "$upstream" = "true" ]; then
 fi
 
 # Exclude packages which we do not want to incorporate into Space ROS
-excluded_pkgs=$(cat "${excluded_packages}")
+exclude_values=""
 if [ "$exclude_installed" = "true" ]; then
     # paths to packages are stored in AMENT_PREFIX_PATH,
     # however rosinstall_generator expects ROS_PACKAGE_PATH variable to be set
     export ROS_PACKAGE_PATH=${AMENT_PREFIX_PATH}
-    GENERATE_CMD="${GENERATE_CMD} --exclude ${excluded_pkgs} RPP"
-else
-    GENERATE_CMD="${GENERATE_CMD} --exclude ${excluded_pkgs}"
+    exclude_values="${exclude_values} RPP"
+fi
+if [ -n "${excluded_packages}" ]; then
+    exclude_values="${exclude_values} $(cat '${excluded_packages}')"
+fi
+if [ -n "${exclude_values}" ]; then
+    GENERATE_CMD="${GENERATE_CMD} --exclude${exclude_values}"
 fi
 
 # include additional repos along specified packages'
