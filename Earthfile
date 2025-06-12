@@ -90,6 +90,11 @@ setup:
   # Create the spaceros directory
   RUN mkdir --mode=777 -p ${SPACEROS_DIR}
 
+  # fix ubuntu24 issues where some base ubuntu24 images have uid 1000 for 'ubuntu' user.
+  # this clashes with default host uid of 1000.
+  # https://askubuntu.com/questions/1513927/ubuntu-24-04-docker-images-now-includes-user-ubuntu-with-uid-gid-1000
+  RUN userdel -r ubuntu
+
   # Create a spaceros user
   RUN useradd -m ${USERNAME} && \
     echo "${USERNAME}:${USERNAME}" | chpasswd && \
