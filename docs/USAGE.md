@@ -6,6 +6,9 @@ The generated container image is based on Ubuntu 22.04 (Jammy)
 ## Building the Docker Image
 
 The [Earthly](https://earthly.dev/get-earthly) utility is required to build this image.
+You can think of Earthly as combination of makefile and docker functionality.
+It takes input Earthfile (similar to Dockerfile) and produces docker images, plus
+some other artifacts, as required.
 
 To build the image, run:
 
@@ -14,6 +17,14 @@ To build the image, run:
 ```
 
 The build process will take about 20 or 30 minutes, depending on the host computer.
+
+**NB: Earthly uses internal caching**, just like Docker, when building images.
+What this means in `space-ros` case is that when source code is cloned into the built image 
+(using `vcs import` or `git clone`) it is cached as one of the layers.
+After that layer is cached Earthly cannot check if there were changes in the referenced
+repositories.
+If you want to pickup those changes you need to clear Earthly cache by running `earthly prune`.
+In practical terms it is recommended to do that every so often.
 
 The build will use the local [ros2.repos](../ros2.repos) file, and will pick up any local modifications.
 The ros2 repos file can be regenerated or updated using the build target,

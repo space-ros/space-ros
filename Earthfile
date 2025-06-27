@@ -116,13 +116,13 @@ repos-file:
   COPY spaceros-pkgs.txt ./
   COPY spaceros.repos ./
   # This is a fresh image, so we do not need to exclude installed packages.
-  RUN --no-cache sh scripts/generate-repos.sh \
+  RUN sh scripts/generate-repos.sh \
                  --outfile ros2.repos \
                  --packages spaceros-pkgs.txt \
                  --excluded-packages excluded-pkgs.txt \
                  --exclude-installed false \
                  --rosdistro ${ROS_DISTRO}
-  RUN --no-cache python3 scripts/merge-repos.py ros2.repos spaceros.repos -o output.repos
+  RUN python3 scripts/merge-repos.py ros2.repos spaceros.repos -o output.repos
   SAVE ARTIFACT output.repos AS LOCAL ros2.repos
 
 spaceros-artifacts:
@@ -136,7 +136,7 @@ spaceros-artifacts:
   COPY colcon_ws_config colcon_ws_config
 
   # this ensure the vcs import and export results are not cached
-  RUN --no-cache echo "Cloning spaceros repo artifacts"
+  RUN echo "Cloning spaceros repo artifacts"
 
   # we run vcstool inside this task, because some packages in `ros2.repos` are not pinned and otherwise
   # earthly won't pull latest changes
