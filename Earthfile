@@ -331,10 +331,10 @@ build-test:
         --pytest-args -m "not xfail" \
         --pytest-args "--disable-warnings"
 
-  # Create tar ball of the logs directory
-  RUN tar -cjf build_test_results.tar.bz2 log
+  RUN . ${SPACEROS_DIR}/setup.sh && \
+      ros2 run process_sarif make_build_archive
 
-  SAVE ARTIFACT "${WORKSPACE_DIR}/build_test_results.tar.bz2" AS LOCAL build_test_results.tar.bz2
+  SAVE ARTIFACT log/build_results_archives/build_results_*.tar.bz2 AS LOCAL log/build_results_archives/
 
 ###############################################################################
 ### Image Stage
