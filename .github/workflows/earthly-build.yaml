@@ -24,11 +24,12 @@ jobs:
         id: build
         run: |
           earthly --ci --output +build-test
+          echo "archivename=$(basename log/build_results_archives/build_results_*.tar.bz2)" >> $GITHUB_ENV
       - name: Upload build results archive
         uses: actions/upload-artifact@v4
         with:
-          name: build_results.tar.bz2
-          path: build_test_results.tar.bz2
+          name: ${{env.archivename}}
+          path: log/build_results_archives/${{env.archivename}}
           if-no-files-found: error
 
   space-ros-main-image:
