@@ -17,7 +17,7 @@ docker run \
   --rm \
   -it \
   --network host \
-  --name ${CONTAINER_NAME} \
+  --name "${CONTAINER_NAME}" \
   -e DISPLAY \
   -e TERM \
   -e QT_X11_NO_MITSHM=1 \
