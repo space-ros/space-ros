@@ -4,7 +4,7 @@ name: ROS 2 Repos Check
 on:
   pull_request:
     branches:
-      - '*'
+      - "*"
 
 jobs:
   format_and_validity:
@@ -22,6 +22,13 @@ jobs:
           -d "{extends: default, rules: {document-start: {present: false}, key-ordering: {}}}"
       - name: Validate repositories
         run: vcs validate --input ros2.repos
+
+  lint:
+    name: Space ROS Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: space-ros/space-ros-lint-action@main
 
   commit_message_standards:
     name: Space ROS Commit Message Standards
