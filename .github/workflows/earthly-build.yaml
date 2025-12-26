@@ -7,6 +7,12 @@ on:
   pull_request:
   schedule:
     - cron: "0 11 * * *"
+
+# Ensures that only one workflow per branch will run at a time
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
+
 jobs:
   build-test:
     env:
