@@ -101,6 +101,10 @@ jobs:
       DOCKER_HUB_IMAGE_NAME: "osrf/space-ros"
 
     steps:
+      # Prevent the GitHub runner from running out of disk space.
+      - name: Free Disk Space (Ubuntu)
+        uses: jlumbroso/free-disk-space@v1.3.1
+
       - name: Checkout
         uses: actions/checkout@v3
 
