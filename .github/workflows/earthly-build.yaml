@@ -46,6 +46,9 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v3
 
+      - name: Sanitize image tag
+        run: echo "IMAGE_TAG=${IMAGE_TAG//\//-}" >> "$GITHUB_ENV"
+
       - name: Set up earthly
         run: |
           sudo wget https://github.com/earthly/earthly/releases/latest/download/earthly-linux-amd64 -O /usr/local/bin/earthly
@@ -107,6 +110,9 @@ jobs:
 
       - name: Checkout
         uses: actions/checkout@v3
+
+      - name: Sanitize image tag
+        run: echo "IMAGE_TAG=${IMAGE_TAG//\//-}" >> "$GITHUB_ENV"
 
       - name: Set up earthly
         run: |
