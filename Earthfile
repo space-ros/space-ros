@@ -320,6 +320,9 @@ build-test:
         mypy \
         argcomplete --break-system-packages
 
+  # Disable certain autosar rules becuase they cause cobra to hang (#311).
+  RUN sed -i -e '/^A5_1_1/d' -e '/^A2_11_4/d' /opt/ros/spaceros/share/cobra_vendor/rules/C++/*.cobra
+
   RUN . ${SPACEROS_DIR}/setup.sh && \
       colcon test \
         --install-base ${SPACEROS_DIR} \
