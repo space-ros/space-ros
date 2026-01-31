@@ -29,4 +29,4 @@ ros2['repositories'] = sorted_repositories
 
 # Write the updated YAML back to file
 with open(output_file, 'w') as ros2_file:
-    yaml.dump(ros2, ros2_file, default_flow_style=False, explicit_start=True)
+    yaml.dump(ros2, ros2_file, default_flow_style=False, explicit_start=False)
