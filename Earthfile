@@ -266,24 +266,28 @@ BUILD_WORKSPACE:
   IF [ "${IMAGE_VARIANT}" = "dev" ]
     COPY colcon_ws_config colcon_ws_config
     RUN python3 colcon_ws_config/prepare_workspace.py # outputs spaceros-linters.meta
-    RUN colcon build \
+    RUN MAKEFLAGS="-j4" colcon build \
         --metas ./spaceros-linters.meta \
         --install-base ${SPACEROS_DIR} \
         --merge-install \
+        --parallel-workers 4 \
         --cmake-args \
         -DCMAKE_BUILD_TYPE=RelWithDebInfo \
         -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
         -DCMAKE_CXX_FLAGS="--param ggc-min-expand=20" \
+        -DCMAKE_C_FLAGS="--param ggc-min-expand=20" \
         --no-warn-unused-cli
   # Otherwise, compile the release image
   ELSE
-    RUN colcon build \
+    RUN MAKEFLAGS="-j4" colcon build \
         --install-base ${SPACEROS_DIR} \
         --merge-install \
+        --parallel-workers 4 \
         --cmake-args \
         -DCMAKE_BUILD_TYPE=Release \
         -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
         -DCMAKE_CXX_FLAGS="--param ggc-min-expand=20" \
+        -DCMAKE_C_FLAGS="--param ggc-min-expand=20" \
         --no-warn-unused-cli
   END
 
