@@ -15,6 +15,8 @@ if (BUILD_TESTING)
     find_package(ament_lint_auto REQUIRED)
     # include common set of spaceros linters
     find_package(ament_cmake_clang_tidy REQUIRED)
+    # the cobra ruleset we want to use
+    set(ament_cmake_cobra_RULESET "jpl")
     find_package(ament_cmake_cobra REQUIRED)
     find_package(ament_cmake_copyright REQUIRED)
     find_package(ament_cmake_cppcheck REQUIRED)
