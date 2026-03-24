@@ -31,6 +31,7 @@ jobs:
           name: ${{env.archivename}}
           path: log/build_results_archives/${{env.archivename}}
           if-no-files-found: error
+          compression-level: 0
 
   space-ros-main-image:
     runs-on: ubuntu-latest
