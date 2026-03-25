@@ -16,3 +16,4 @@ cppcheck
 pydocstyle
 python3-nose
 google-mock
+clang-format
