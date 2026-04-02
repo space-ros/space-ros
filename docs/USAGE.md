@@ -41,6 +41,22 @@ earthly +all
 
 The build process will take about 30 minutes (or more), depending on the host computer.
 
+### Troubleshooting `SAVE IMAGE` fails with "pull ping error" / "unexpected EOF"
+
+When running any of the above commands, you may see error(s) similar to the following:
+
+```text
+Error: pull ping error: pull ping response: rpc error: code = Unknown desc = image pull: 1 error occurred:
+  * command failed: docker pull 127.0.0.1:<port>/sess-.../pullping:img-0: exit status 1
+  ...unexpected EOF
+```
+
+This is a [known issue](https://github.com/earthly/earthly/issues/3736) with
+Earthly's remote registry proxy, which transfers the built image to the local
+Docker daemon via an internal HTTP registry. Large image layers (such as those created above) can fail to
+transfer.
+To work around this issue, you can add the argument `--disable-remote-registry-proxy` to your `earthly` commands or set the relevant environment variable with `export EARTHLY_DISABLE_REMOTE_REGISTRY_PROXY=1` before running `earthly`.
+
 ## Usage
 
 After building, check the newly-built images by running:
