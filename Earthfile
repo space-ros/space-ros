@@ -329,7 +329,8 @@ build-test:
         --ctest-args -LE "(ikos|xfail)" \
         --ctest-args "--output-on-failure" \
         --pytest-args -m "not xfail" \
-        --pytest-args "--disable-warnings"
+        --pytest-args "--disable-warnings" \
+        --event-handlers console_cohesion+
 
   RUN . ${SPACEROS_DIR}/setup.sh && \
       ros2 run process_sarif make_build_archive
