@@ -2,7 +2,7 @@ repositories:
   ament_cmake:
     type: git
     url: https://github.com/ament/ament_cmake.git
-    version: 2.5.5
+    version: 2.5.6
   ament_cmake_ros:
     type: git
     url: https://github.com/ros2/ament_cmake_ros.git
@@ -18,7 +18,7 @@ repositories:
   ament_index:
     type: git
     url: https://github.com/ament/ament_index.git
-    version: 1.8.2
+    version: 1.8.3
   ament_lint:
     type: git
     url: https://github.com/ament/ament_lint.git
@@ -34,7 +34,7 @@ repositories:
   common_interfaces:
     type: git
     url: https://github.com/ros2/common_interfaces.git
-    version: 5.3.6
+    version: 5.3.7
   console_bridge_vendor:
     type: git
     url: https://github.com/ros2/console_bridge_vendor.git
@@ -50,7 +50,7 @@ repositories:
   geometry2:
     type: git
     url: https://github.com/ros2/geometry2.git
-    version: 0.36.19
+    version: 0.36.20
   google_benchmark_vendor:
     type: git
     url: https://github.com/ament/google_benchmark_vendor.git
@@ -86,7 +86,7 @@ repositories:
   message_filters:
     type: git
     url: https://github.com/ros2/message_filters.git
-    version: 4.11.10
+    version: 4.11.13
   mimick_vendor:
     type: git
     url: https://github.com/ros2/mimick_vendor.git
@@ -110,7 +110,7 @@ repositories:
   pluginlib:
     type: git
     url: https://github.com/ros/pluginlib.git
-    version: 5.4.4
+    version: 5.4.5
   process_sarif:
     type: git
     url: https://github.com/space-ros/process_sarif.git
@@ -138,11 +138,11 @@ repositories:
   rclcpp:
     type: git
     url: https://github.com/ros2/rclcpp.git
-    version: 28.1.16
+    version: 28.1.18
   rclpy:
     type: git
     url: https://github.com/ros2/rclpy.git
-    version: 7.1.9
+    version: 7.1.11
   rcpputils:
     type: git
     url: https://github.com/ros2/rcpputils.git
@@ -178,7 +178,7 @@ repositories:
   ros2cli:
     type: git
     url: https://github.com/ros2/ros2cli.git
-    version: 0.32.8
+    version: 0.32.9
   ros_environment:
     type: git
     url: https://github.com/ros/ros_environment.git
@@ -194,7 +194,7 @@ repositories:
   rosidl_core:
     type: git
     url: https://github.com/ros2/rosidl_core.git
-    version: 0.2.0
+    version: 0.2.1
   rosidl_defaults:
     type: git
     url: https://github.com/ros2/rosidl_defaults.git
@@ -211,6 +211,10 @@ repositories:
     type: git
     url: https://github.com/ros2/rosidl_runtime_py.git
     version: 0.13.1
+  rosidl_rust:
+    type: git
+    url: https://github.com/ros2-rust/rosidl_rust.git
+    version: 0.4.12
   rosidl_typesupport:
     type: git
     url: https://github.com/ros2/rosidl_typesupport.git
