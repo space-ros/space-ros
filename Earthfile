@@ -54,10 +54,23 @@ pre-installation:
   RUN mkdir -p ${WORKSPACE_DIR}
   WORKDIR ${WORKSPACE_DIR}
 
-  # Set the locale
-  RUN apt-get update && apt-get install -y locales
-  RUN locale-gen en_US en_US.UTF-8
-  RUN update-locale LC_ALL=en_US.UTF-8 LANG=en_US.UTF-8
+  # For apt installations in all layers, prevent dpkg from installing docs, man pages, and info pages
+  RUN printf 'path-exclude /usr/share/doc/*\npath-exclude /usr/share/man/*\npath-exclude /usr/share/info/*\n' \
+        > /etc/dpkg/dpkg.cfg.d/exclude-docs \
+      && rm -rf /usr/share/doc /usr/share/man /usr/share/info
+
+  # Set the locale, then use localepurge to safely strip unneeded locale data.
+  # Unlike `rm -rf /usr/share/i18n`, localepurge removes only the locale files we
+  # don't need (keeping en_US.UTF-8) without leaving the system in an inconsistent
+  # state. Installing it also keeps subsequent apt layers purged automatically.
+  RUN apt-get update && apt-get install -y locales \
+      && locale-gen en_US en_US.UTF-8 \
+      && update-locale LC_ALL=en_US.UTF-8 LANG=en_US.UTF-8
+  RUN apt-get install -y --no-install-recommends localepurge \
+      && echo "localepurge localepurge/nopurge multiselect en_US.UTF-8, en_US" | debconf-set-selections \
+      && echo "localepurge localepurge/mandelete boolean true" | debconf-set-selections \
+      && dpkg-reconfigure -f noninteractive localepurge \
+      && localepurge
   ENV LANG=en_US.UTF-8
 
   # The following commands are based on the source install for ROS 2 Rolling Ridley.
@@ -65,13 +78,8 @@ pre-installation:
   # The main variation is getting Space ROS sources instead of the Rolling sources.
 
   # Add the ROS 2 apt repository
-  RUN apt-get update && apt-get install -y \
+  RUN apt-get update && apt-get install -y --no-install-recommends \
         curl \
-        git \
-        cmake \
-        build-essential \
-        bison \
-        wget \
         gnupg \
         lsb-release \
         python3-pip \
@@ -83,12 +91,27 @@ pre-installation:
     && apt update
 
 ###############################################################################
+### Pre-Installation Build Stage
+# Extends pre-installation with build tools needed for compiling from source.
+# Only used by build-time stages (setup, sources, rosdep, build, ikos-install).
+# Separating this stage allows the below tools to be excluded from the main image.
+###############################################################################
+pre-installation-build:
+  FROM +pre-installation
+  RUN apt-get update && apt-get install -y \
+        git \
+        cmake \
+        build-essential \
+        bison \
+        wget
+
+###############################################################################
 ### Setup Stage
 # This stage is responsible for setting up the ROS 2 workspace and the required
 # dependencies for the workspace.
 ###############################################################################
 setup:
-  FROM +pre-installation
+  FROM +pre-installation-build
   # Install required software development tools and ROS tools (and vim included for convenience)
   RUN apt-get install -y python3-rosinstall-generator
 
@@ -112,7 +135,7 @@ setup:
 # test and development.
 ###############################################################################
 ikos-install:
-  FROM +pre-installation
+  FROM +pre-installation-build
 
   RUN apt-get update && apt-get install --yes \
       gcc \
@@ -205,7 +228,7 @@ sources:
 # for the ROS 2 workspace.
 ###############################################################################
 rosdep:
-  FROM +pre-installation
+  FROM +pre-installation-build
 
   # Rosdep updates
   RUN apt-get update && apt-get install -y python3-rosdep \
@@ -255,6 +278,17 @@ build:
   RUN mkdir -p ${SPACEROS_DIR}
 
   DO +BUILD_WORKSPACE --IMAGE_VARIANT=${IMAGE_VARIANT}
+
+  # Strip build-time-only artifacts from the install for the core image
+  # Remove .cmake files, CMakeLists, and pycache files; all unneeded at runtime
+  IF [ "${IMAGE_VARIANT}" != "dev" ]
+    RUN rm -rf ${SPACEROS_DIR}/include \
+      && find ${SPACEROS_DIR}/share -type d -name "cmake" -exec rm -rf {} + \
+      && find ${SPACEROS_DIR}/share -name "*.cmake" -delete \
+      && find ${SPACEROS_DIR}/share -name "CMakeLists.txt" -delete \
+      && find ${SPACEROS_DIR} -name "*.pyc" -delete \
+      && find ${SPACEROS_DIR} -name "__pycache__" -type d -empty -delete
+  END
 
   SAVE ARTIFACT ${SPACEROS_DIR} spaceros_install
 
@@ -345,17 +379,16 @@ build-test:
 prepare-image:
   FROM +pre-installation
 
-  # Add missing dependencies
-  RUN apt-get update && apt-get install -y \
+  # Add missing runtime dependencies
+  RUN apt-get update && apt-get install -y --no-install-recommends \
         libspdlog-dev \
+        python3-netifaces \
         python3-numpy \
         tzdata \
-        sudo \
-        ros-dev-tools
+        sudo
   RUN pip3 install pyyaml \
         lark \
         packaging \
-        netifaces \
         catkin_pkg \
         psutil --break-system-packages
 
@@ -424,9 +457,9 @@ POST_INSTALLATION:
     RUN apt-get update && apt-get install -y \
           $(grep -v '^#' excluded-deps.txt) \
           && rm -rf excluded-deps.txt
-  # If Core, we only care about the install, and then clear the workspace
+  # If Core, we only care about the install, so clear the workspace and /usr/include
   ELSE
-    RUN rm -rf ${WORKSPACE_DIR}
+    RUN rm -rf ${WORKSPACE_DIR} /usr/include
   END
 
   # Clear Apt and Pip cache
