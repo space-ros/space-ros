@@ -296,26 +296,26 @@ build-test:
 
   # Install dependencies for testing
   RUN apt-get update && apt-get install -y \
-        python3-flake8 \
-        python3-pydocstyle \
         clang-tidy \
-        graphviz \
-        uncrustify \
-        python3-pycodestyle \
         cppcheck \
-        python3-nose \
         google-mock \
+        graphviz \
         pydocstyle \
-        python3-pytest \
-        python3-pytest-timeout \
-        python3-pytest-mock \
-        python3-pytest-cov \
-        python3-matplotlib \
         pyflakes3 \
+        python3-argcomplete \
+        python3-flake8 \
+        python3-matplotlib \
         python3-mypy \
-        python3-pytest-rerunfailures \
+        python3-nose \
+        python3-pycodestyle \
+        python3-pydocstyle \
+        python3-pytest \
+        python3-pytest-cov \
+        python3-pytest-mock \
         python3-pytest-repeat \
-        python3-argcomplete
+        python3-pytest-rerunfailures \
+        python3-pytest-timeout \
+        uncrustify
 
   RUN . ${SPACEROS_DIR}/setup.sh && \
       colcon test \
@@ -345,15 +345,15 @@ prepare-image:
   # Add missing dependencies
   RUN apt-get update && apt-get install -y \
         libspdlog-dev \
-        python3-numpy \
-        tzdata \
-        sudo \
-        ros-dev-tools \
-        python3-lark \
-        python3-packaging \
-        python3-netifaces \
         python3-catkin-pkg \
-        python3-psutil
+        python3-lark \
+        python3-netifaces \
+        python3-numpy \
+        python3-packaging \
+        python3-psutil \
+        ros-dev-tools \
+        sudo \
+        tzdata
 
   # Prepare the image
   RUN mkdir -p ${SPACEROS_DIR}
