@@ -1,0 +1,18 @@
+# hadolint configuration. See: https://github.com/hadolint/hadolint
+#
+# Rules ignored here are either impractical for a ROS source-build image or
+# false positives for this Dockerfile's multi-stage structure. Everything else
+# is fixed in the Dockerfile rather than silenced.
+ignored:
+  # Pin versions in apt-get install. ROS/Ubuntu package versions roll forward
+  # constantly in the upstream repos this image builds against; pinning every
+  # apt package would break builds on the next archive refresh and is not
+  # maintainable for a source-build image.
+  - DL3008
+  # Multiple consecutive RUN instructions. They are kept separate on purpose so
+  # each logical step is its own cache layer and stays readable.
+  - DL3059
+  # Always tag the version of an image explicitly. `FROM ikos-${IMAGE_VARIANT}`
+  # selects an internal build stage by build arg, not a remote image, so there
+  # is no version to tag.
+  - DL3006

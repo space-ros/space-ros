@@ -1,0 +1,13 @@
+# Keep the build context small and reproducible. Only the files referenced by
+# the Dockerfile are needed; everything else is excluded.
+.git
+.github
+docs
+logos
+log
+build
+install
+*.md
+run.sh
+Makefile
+ros2.repos
