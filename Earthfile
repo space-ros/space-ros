@@ -68,9 +68,6 @@ pre-installation:
   RUN apt-get update && apt-get install -y \
         curl \
         git \
-        cmake \
-        build-essential \
-        bison \
         wget \
         gnupg \
         less \
@@ -83,6 +80,19 @@ pre-installation:
   RUN curl -sSL https://raw.githubusercontent.com/ros/rosdistro/master/ros.key -o /usr/share/keyrings/ros-archive-keyring.gpg
   RUN echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/ros-archive-keyring.gpg] http://packages.ros.org/ros2/ubuntu $(lsb_release -cs) main" | tee /etc/apt/sources.list.d/ros2.list > /dev/null \
     && apt update
+
+###############################################################################
+### Build PreInstallation Stage
+# This stage extends the runtime base with compiler and build tooling that is
+# required to compile Space ROS but should not be present in the core image.
+###############################################################################
+build-pre-installation:
+  FROM +pre-installation
+
+  RUN apt-get update && apt-get install -y --no-install-recommends \
+        bison \
+        build-essential \
+        cmake
 
 ###############################################################################
 ### Setup Stage
@@ -207,7 +217,7 @@ sources:
 # for the ROS 2 workspace.
 ###############################################################################
 rosdep:
-  FROM +pre-installation
+  FROM +build-pre-installation
 
   # Rosdep updates
   RUN apt-get update && apt-get install -y python3-rosdep \
@@ -218,7 +228,7 @@ rosdep:
   COPY +sources/src ./src
   COPY excluded-pkgs.txt excluded-deps.txt ./
 
-  # Install system package dependencies using rosdep
+  # Resolve the full dependency set used while compiling and testing.
   RUN rosdep install -y \
         --from-paths src --ignore-src \
         --simulate \
@@ -226,9 +236,26 @@ rosdep:
         # `urdfdom_headers` is cloned from source, however rosdep can't find it.
         # It is because package.xml manifest is missing. See: https://github.com/ros/urdfdom_headers
         # Additionally, IKOS must be excluded as per: https://github.com/space-ros/docker/issues/99
+        --skip-keys "$(tr '\n' ' ' < 'excluded-pkgs.txt') urdfdom_headers ikos" > rosdeps-build.txt
+
+  # Resolve only execution dependencies for the core runtime image. rosdep
+  # otherwise installs build and test dependencies by default.
+  RUN rosdep install -y \
+        --from-paths src --ignore-src \
+        --simulate \
+        --dependency-types exec \
+        --rosdistro ${ROS_DISTRO} \
         --skip-keys "$(tr '\n' ' ' < 'excluded-pkgs.txt') urdfdom_headers ikos" > rosdeps.txt
 
-  # Process rosdeps.txt to a shell script
+  # Process the build dependency set into a shell script.
+  RUN touch rosdeps-build.sh \
+        && echo "#!/bin/bash" > rosdeps-build.sh \
+        && echo "apt-get update" >> rosdeps-build.sh \
+        && echo "apt-get install -y \\" >> rosdeps-build.sh \
+        && grep -v -F -f excluded-deps.txt rosdeps-build.txt | sed 's/^/  /' >> rosdeps-build.sh \
+        && chmod +x rosdeps-build.sh
+
+  # Preserve rosdeps.sh as the runtime dependency script shipped in the image.
   RUN touch rosdeps.sh \
         && echo "#!/bin/bash" > rosdeps.sh \
         && echo "apt-get update" >> rosdeps.sh \
@@ -236,8 +263,7 @@ rosdep:
         && grep -v -F -f excluded-deps.txt rosdeps.txt | sed 's/^/  /' >> rosdeps.sh \
         && chmod +x rosdeps.sh
 
-  # The generated shell script is used by the prepare-image stage prior to building the image
-  # saving build time by not having to install dependencies again.
+  SAVE ARTIFACT rosdeps-build.sh
   SAVE ARTIFACT rosdeps.sh
 
 ###############################################################################
@@ -253,7 +279,7 @@ build:
   RUN apt-get update && apt-get install -y \
         python3-vcstool \
         python3-colcon-common-extensions
-  RUN bash rosdeps.sh
+  RUN bash rosdeps-build.sh
   RUN mkdir -p ${SPACEROS_DIR}
 
   DO +BUILD_WORKSPACE --IMAGE_VARIANT=${IMAGE_VARIANT}
@@ -357,13 +383,13 @@ prepare-image:
         python3-numpy \
         python3-packaging \
         python3-psutil \
-        ros-dev-tools \
         sudo \
         tzdata
 
   # Prepare the image
   RUN mkdir -p ${SPACEROS_DIR}
   COPY +rosdep/rosdeps.sh ${SPACEROS_DIR}/rosdeps.sh
+  COPY +rosdep/rosdeps-build.sh ${SPACEROS_DIR}/rosdeps-build.sh
   RUN bash ${SPACEROS_DIR}/rosdeps.sh
 
 ###############################################################################
@@ -379,7 +405,8 @@ image:
   COPY +sources/exact.repos ${SPACEROS_DIR}/scripts/spaceros.repos
   COPY scripts/generate-repos.sh scripts/merge-repos.py ${SPACEROS_DIR}/scripts/
   RUN chmod +x ${SPACEROS_DIR}/scripts/generate-repos.sh ${SPACEROS_DIR}/scripts/merge-repos.py \
-      && mv ${SPACEROS_DIR}/rosdeps.sh ${SPACEROS_DIR}/scripts/rosdeps.sh
+      && mv ${SPACEROS_DIR}/rosdeps.sh ${SPACEROS_DIR}/scripts/rosdeps.sh \
+      && mv ${SPACEROS_DIR}/rosdeps-build.sh ${SPACEROS_DIR}/scripts/rosdeps-build.sh
 
   # Post Installation cleanup
   DO +POST_INSTALLATION --IMAGE_VARIANT=${IMAGE_VARIANT}
@@ -410,6 +437,22 @@ image:
   SAVE IMAGE ${IMAGE_NAME}:${IMAGE_VARIANT}
 
 ###############################################################################
+### Runtime Smoke Test Stage
+# Verify that the core image remains usable without the build toolchain.
+###############################################################################
+runtime-smoke-test:
+  FROM +image --IMAGE_VARIANT=${IMAGE_TAG}
+
+  RUN . ${SPACEROS_DIR}/setup.sh \
+      && ros2 pkg list > /tmp/spaceros-packages.txt \
+      && test -s /tmp/spaceros-packages.txt
+
+  RUN ! command -v gcc \
+      && ! command -v g++ \
+      && ! command -v cmake \
+      && ! command -v clang-format
+
+###############################################################################
 ### Post Installation Stage
 # This stage is responsible for cleaning up the workspace and installing
 # additional dependencies based on the image variant.
@@ -418,17 +461,18 @@ POST_INSTALLATION:
   FUNCTION
   ARG --required IMAGE_VARIANT
 
-  # If Dev, install IKOS and excluded dependencies
+  # If Dev, restore build dependencies, install IKOS and excluded dependencies
   IF [ "${IMAGE_VARIANT}" = "dev" ]
+    RUN bash ${SPACEROS_DIR}/scripts/rosdeps-build.sh
     DO +ADD_IKOS
 
     COPY excluded-deps.txt ./
     RUN apt-get update && apt-get install -y \
           $(grep -v '^#' excluded-deps.txt) \
           && rm -rf excluded-deps.txt
-  # If Core, we only care about the install, so clear the workspace
+  # If Core, we only care about the install, so clear build-only state
   ELSE
-    RUN rm -rf ${WORKSPACE_DIR}
+    RUN rm -rf ${WORKSPACE_DIR} ${SPACEROS_DIR}/scripts/rosdeps-build.sh
   END
 
   # Clear Apt and Pip cache
