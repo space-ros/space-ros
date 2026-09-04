@@ -213,12 +213,19 @@ RUN rosdep install -y \
       --rosdistro "${ROS_DISTRO}" \
       --skip-keys "$(tr '\n' ' ' < 'excluded-pkgs.txt') urdfdom_headers ikos" > rosdeps.txt
 
-# Process rosdeps.txt to a shell script
+# Process rosdeps.txt to a shell script.
+#
+# We remove all the packages listed in `excluded-deps.txt`, remove any specific
+# invocations of `apt-get install -y` left by `rosdep`, and join all the lines.
 RUN touch rosdeps.sh \
       && echo "#!/bin/bash" > rosdeps.sh \
+      && echo "set -e" >> rosdeps.sh \
       && echo "apt-get update" >> rosdeps.sh \
-      && echo "apt-get install -y \\" >> rosdeps.sh \
-      && grep -v -F -f excluded-deps.txt rosdeps.txt | sed 's/^\( *\)apt-get install -y/\1apt-get install -y --no-install-recommends/' | sed 's/^/  /' >> rosdeps.sh \
+      && echo "apt-get install -y --no-install-recommends \
+                 $( grep -v -F -f excluded-deps.txt rosdeps.txt \
+                  | sed -n 's/^ *apt-get install -y *//p' \
+                  | tr '\n' ' ' \
+                  )" >> rosdeps.sh \
       && chmod +x rosdeps.sh
 
 ###############################################################################
