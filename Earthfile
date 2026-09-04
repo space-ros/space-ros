@@ -233,9 +233,10 @@ rosdep:
   # Process rosdeps.txt to a shell script
   RUN touch rosdeps.sh \
         && echo "#!/bin/bash" > rosdeps.sh \
+        && echo "set -e" >> rosdeps.sh \
         && echo "apt-get update" >> rosdeps.sh \
-        && echo "apt-get install -y \\" >> rosdeps.sh \
-        && grep -v -F -f excluded-deps.txt rosdeps.txt | sed 's/^\( *\)apt-get install -y/\1apt-get install -y --no-install-recommends/' | sed 's/^/  /' >> rosdeps.sh \
+        && echo "apt-get install -y --no-install-recommends $(grep -v -F -f excluded-deps.txt rosdeps.txt \
+             | sed -n 's/^ *apt-get install -y *//p' | tr '\n' ' ')" >> rosdeps.sh \
         && chmod +x rosdeps.sh
 
   # The generated shell script is used by the prepare-image stage prior to building the image
