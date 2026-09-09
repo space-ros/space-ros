@@ -32,14 +32,10 @@ Build the Space ROS Docker image by running the following command:
 
 ```bash
 # To build the base Space ROS image
-docker buildx build --target image \
-  --build-arg IMAGE_VARIANT=main \
-  --tag osrf/space-ros:latest --load .
+./build.sh
 
 # To build the dev Space ROS image
-docker buildx build --target image \
-  --build-arg IMAGE_VARIANT=dev \
-  --tag osrf/space-ros:dev --load .
+SPACE_ROS_VARIANT=dev ./build.sh
 ```
 
 The build process will take about 30 minutes (or more), depending on the host computer.

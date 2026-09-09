@@ -16,14 +16,10 @@ For information on the release process refere to the [release docs](./docs/RELEA
 
 ```bash
 # To build the base Space ROS image
-docker buildx build --target image \
-  --build-arg IMAGE_VARIANT=main \
-  --tag osrf/space-ros:latest --load .
+./build.sh
 
 # To build the dev Space ROS image
-docker buildx build --target image \
-  --build-arg IMAGE_VARIANT=dev \
-  --tag osrf/space-ros:dev --load .
+SPACE_ROS_VARIANT=dev ./build.sh
 ```
 
 ## Contribution rules
