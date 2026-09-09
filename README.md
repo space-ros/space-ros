@@ -16,10 +16,10 @@ For information on the release process refere to the [release docs](./docs/RELEA
 
 ```bash
 # To build the base Space ROS image
-earthly +main-image
+./build.sh
 
 # To build the dev Space ROS image
-earthly +dev-image
+SPACE_ROS_VARIANT=dev ./build.sh
 ```
 
 ## Contribution rules

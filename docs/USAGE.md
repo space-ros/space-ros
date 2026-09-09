@@ -25,15 +25,15 @@ Make sure docker is running and the user has the necessary permissions to run do
 
 Space ROS comes in different flavors, the following image variants are available:
 
- - `main-image`: The main image contains the ROS 2 core packages, including the ROS 2 client libraries, the ROS 2 command line tools, and the ROS 2 middleware implementations.
- - `dev-image`: The dev image contains the main image and additional tools for development, such as the ROS 2 build tools, the ROS 2 test tools, and the ROS 2 launch tools, as well as tooling for static code analysis.
+ - `main`: The main image contains the ROS 2 core packages, including the ROS 2 client libraries, the ROS 2 command line tools, and the ROS 2 middleware implementations.
+ - `dev`: The dev image contains the main image and additional tools for development, such as the ROS 2 build tools, the ROS 2 test tools, and the ROS 2 launch tools, as well as tooling for static code analysis.
 
 Build the Space ROS Docker image by running the following command:
 
 ```bash
 # To build a specific image variant, use the following command:
-earthly +main-image
-earthly +dev-image
+./build.sh
+SPACE_ROS_VARIANT=dev ./build.sh
 
 # To build all image variants and artifacts, use the following command:
 earthly +all
@@ -135,7 +135,7 @@ The `osrf/space-ros:dev` image is intended for development and contains addition
 We provide a run script to start the Space ROS Docker container for development, which includes additional arguments for network sharing and graphics access,
 
 ```bash
-./run.sh
+SPACE_ROS_VARIANT=dev ./run.sh
 ```
 
 This container will have all the tools necessary for building and testing ROS 2 packages.
