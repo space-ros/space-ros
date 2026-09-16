@@ -345,6 +345,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
       python3-numpy \
       python3-packaging \
       python3-psutil \
+      python3-rosinstall-generator \
       ros-dev-tools \
       sudo \
       tzdata \
