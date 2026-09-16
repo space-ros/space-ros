@@ -269,6 +269,10 @@ RUN if [ "${IMAGE_VARIANT}" = "dev" ]; then \
       echo "Unknown IMAGE_VARIANT: '${IMAGE_VARIANT}' (expected 'main' or 'dev')" >&2; exit 1; \
     fi
 
+# Built package names, for downstream rosinstall_generator --exclude and rosdep --skip-keys.
+RUN colcon list --names-only --base-paths src > installed-pkgs.txt \
+    && sort -o installed-pkgs.txt installed-pkgs.txt
+
 ###############################################################################
 ### Build Test Stage
 # Runs the tests on the (dev) ROS 2 workspace and assembles the build results
@@ -372,6 +376,7 @@ SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 
 COPY --from=build ${SPACEROS_DIR} ${SPACEROS_DIR}
 COPY --from=sources /spaceros_ws/exact.repos ${SPACEROS_DIR}/scripts/spaceros.repos
+COPY --from=build /spaceros_ws/installed-pkgs.txt ${SPACEROS_DIR}/scripts/installed-pkgs.txt
 COPY scripts/generate-repos.sh scripts/merge-repos.py ${SPACEROS_DIR}/scripts/
 RUN chmod +x "${SPACEROS_DIR}/scripts/generate-repos.sh" "${SPACEROS_DIR}/scripts/merge-repos.py" \
     && mv "${SPACEROS_DIR}/rosdeps.sh" "${SPACEROS_DIR}/scripts/rosdeps.sh"
