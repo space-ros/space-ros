@@ -1,7 +1,7 @@
-# Space ROS Docker Image and Earthly configuration
+# Space ROS Docker Image
 
-The Earthfile configuration in this directory facilitates builds of Space ROS from source code.
-The generated container image is based on Ubuntu 22.04 (Jammy)
+The `Dockerfile` in this directory facilitates builds of Space ROS from source code.
+The generated container image is based on Ubuntu 24.04 (Noble).
 
 ## Prerequisites
 
@@ -9,11 +9,11 @@ The following software is required to build the Space ROS Docker image:
 
 - [Git](https://git-scm.com/downloads)
 - [Docker](https://docs.docker.com/get-docker/)
-- [Earthly](https://earthly.dev/get-earthly)
+- [Buildx](https://docs.docker.com/build/concepts/overview/) (`sudo apt-get install docker-buildx`)
 
 ## Setup
 
-The image is built using the [Earthly](https://earthly.dev/get-earthly) utility.
+The images are built with `docker buildx`.
 First, clone the Space ROS repository:
 
 ```bash
@@ -25,37 +25,24 @@ Make sure docker is running and the user has the necessary permissions to run do
 
 Space ROS comes in different flavors, the following image variants are available:
 
- - `main-image`: The main image contains the ROS 2 core packages, including the ROS 2 client libraries, the ROS 2 command line tools, and the ROS 2 middleware implementations.
- - `dev-image`: The dev image contains the main image and additional tools for development, such as the ROS 2 build tools, the ROS 2 test tools, and the ROS 2 launch tools, as well as tooling for static code analysis.
+ - `main`: The main image contains the ROS 2 core packages, including the ROS 2 client libraries, the ROS 2 command line tools, and the ROS 2 middleware implementations.
+ - `dev`: The dev image contains the main image and additional tools for development, such as the ROS 2 build tools, the ROS 2 test tools, and the ROS 2 launch tools, as well as tooling for static code analysis.
 
 Build the Space ROS Docker image by running the following command:
 
 ```bash
-# To build a specific image variant, use the following command:
-earthly +main-image
-earthly +dev-image
+# To build the base Space ROS image
+docker buildx build --target image \
+  --build-arg IMAGE_VARIANT=main \
+  --tag osrf/space-ros:latest --load .
 
-# To build all image variants and artifacts, use the following command:
-earthly +all
+# To build the dev Space ROS image
+docker buildx build --target image \
+  --build-arg IMAGE_VARIANT=dev \
+  --tag osrf/space-ros:dev --load .
 ```
 
 The build process will take about 30 minutes (or more), depending on the host computer.
-
-### Troubleshooting `SAVE IMAGE` fails with "pull ping error" / "unexpected EOF"
-
-When running any of the above commands, you may see error(s) similar to the following:
-
-```text
-Error: pull ping error: pull ping response: rpc error: code = Unknown desc = image pull: 1 error occurred:
-  * command failed: docker pull 127.0.0.1:<port>/sess-.../pullping:img-0: exit status 1
-  ...unexpected EOF
-```
-
-This is a [known issue](https://github.com/earthly/earthly/issues/3736) with
-Earthly's remote registry proxy, which transfers the built image to the local
-Docker daemon via an internal HTTP registry. Large image layers (such as those created above) can fail to
-transfer.
-To work around this issue, you can add the argument `--disable-remote-registry-proxy` to your `earthly` commands or set the relevant environment variable with `export EARTHLY_DISABLE_REMOTE_REGISTRY_PROXY=1` before running `earthly`.
 
 ## Usage
 

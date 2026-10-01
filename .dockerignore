@@ -1,0 +1,14 @@
+# Allowlist: exclude everything, then re-include exactly the paths the
+# Dockerfile COPYs from the build context. `docker buildx build .` sends the
+# whole unignored context to the builder, and this context builds a public base
+# image, so a denylist would silently admit any new file dropped in the repo
+# root. Adding a COPY means adding its path here.
+*
+
+!colcon_ws_config
+!docker/entrypoint.sh
+!scripts
+!excluded-deps.txt
+!excluded-pkgs.txt
+!spaceros-pkgs.txt
+!spaceros.repos
