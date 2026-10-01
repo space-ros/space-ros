@@ -21,5 +21,5 @@ docker run \
   -e DISPLAY \
   -e TERM \
   -e QT_X11_NO_MITSHM=1 \
-  ${IMG_NAME}:${TAG} \
+  "${IMG_NAME}:${TAG}" \
   bash
