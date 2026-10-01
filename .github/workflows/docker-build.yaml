@@ -7,6 +7,12 @@ on:
   pull_request:
   schedule:
     - cron: "0 11 * * *"
+
+# Cancels a PR's older run when a new commit is pushed. Runs on main and tags queue instead.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
   build-test:
     runs-on: ubuntu-24.04
