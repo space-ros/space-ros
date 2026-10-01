@@ -7,6 +7,13 @@ on:
   pull_request:
   schedule:
     - cron: "0 11 * * *"
+
+# Cancel a PR's older run when a new commit is pushed. This check does not
+# apply to `main` or tags, which we do not want to cancel.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
   build-test:
     runs-on: ubuntu-24.04
