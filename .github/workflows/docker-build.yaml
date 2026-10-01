@@ -9,7 +9,7 @@ on:
     - cron: "0 11 * * *"
 jobs:
   build-test:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       # Clears preinstalled toolchains, avoiding GitHub runner disk space issues
       - name: Free Disk Space (Ubuntu)
@@ -40,7 +40,7 @@ jobs:
           compression-level: 0
 
   space-ros-main-image:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     env:
       IMAGE_TAG: "${{ github.head_ref || github.ref_name }}"
       VCS_REF: ${{ github.sha }}
@@ -106,7 +106,7 @@ jobs:
           docker push "$DOCKER_HUB_IMAGE_NAME:latest"
 
   space-ros-dev-image:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     env:
       IMAGE_TAG: "${{ github.head_ref || github.ref_name }}-dev"
       VCS_REF: ${{ github.sha }}
