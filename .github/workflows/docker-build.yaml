@@ -32,7 +32,7 @@ jobs:
           echo "archivename=$(basename log/build_results_archives/build_results_*.tar.bz2)" >> $GITHUB_ENV
 
       - name: Upload build results archive
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: ${{env.archivename}}
           path: log/build_results_archives/${{env.archivename}}
@@ -75,7 +75,7 @@ jobs:
 
       # Login and push the main builds to GHCR
       - name: Login to GHCR
-        uses: docker/login-action@v3
+        uses: docker/login-action@v4
         if: ${{ github.ref_name == 'main' }}
         with:
           registry: ghcr.io
@@ -141,7 +141,7 @@ jobs:
 
       # Only push the main dev builds to GHCR
       - name: Login to GHCR
-        uses: docker/login-action@v3
+        uses: docker/login-action@v4
         if: ${{ github.ref_name == 'main' }}
         with:
           registry: ghcr.io
