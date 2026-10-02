@@ -144,6 +144,21 @@ Additionally, out of the box the install is owned by `root`, modify the ownershi
 sudo chown -R spaceros-user:spaceros-user "${SPACEROS_DIR}"
 ```
 
+### Building workspaces on top of the image
+
+`${SPACEROS_DIR}/scripts/installed-pkgs.txt` names every package the image builds, including plain CMake packages such as `urdfdom_headers` that `ros2 pkg list` does not report.
+Pass it to `rosinstall_generator` and `rosdep` so they do not fetch or install those packages again:
+
+```bash
+LIST=${SPACEROS_DIR}/scripts/installed-pkgs.txt
+rosinstall_generator --rosdistro "${ROS_DISTRO}" --deps --upstream --format repos \
+  --exclude $(cat "${LIST}" excluded-pkgs.txt) -- $(cat my-pkgs.txt) > deps.repos
+rosdep install --from-paths src --ignore-src -y --rosdistro "${ROS_DISTRO}" \
+  --skip-keys "$(cat "${LIST}" excluded-pkgs.txt | tr '\n' ' ')"
+```
+
+`my-pkgs.txt` lists the packages your workspace needs, and `excluded-pkgs.txt` holds anything you exclude on purpose.
+
 ### Next Steps
 
 1. To use IKOS follow the instructions in the [IKOS Integration](./IKOS.md) documentation.
