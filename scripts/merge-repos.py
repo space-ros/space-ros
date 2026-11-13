@@ -10,7 +10,7 @@ parser.add_argument('-o', '--output', default=None, help='Output file, will defa
 args = parser.parse_args()
 
 # Defalt to overwriting the ros2_repos file if not specified
-output_file = args.output if args.output else args.ros2_file
+output_file = args.output if args.output else args.ros2_repos
 
 # Load YAML repos files
 with open(args.ros2_repos, 'r') as ros2_file:
